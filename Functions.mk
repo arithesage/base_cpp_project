@@ -1,19 +1,22 @@
+
+#################################################
+# May be useful in the future
+# 
 # ${1}: Source file
 # ${2}: Object file to generate
 # ${3}: Extra flags
-
-define C_COMPILE
-${2}: ${1}
-	$(shell mkdir -p $(dir ${2}))
-	${C} -c ${1} -o ${2} ${CFLAGS} ${3}
-endef
-
-
-define CXX_COMPILE
-${2}: ${1}
-	$(shell mkdir -p $(dir ${2}))
-	${CXX} -c ${1} -o ${2} ${CXXFLAGS} ${3}
-endef
+#
+#
+#define COMPILE
+#${2}: ${1}
+#	$(shell mkdir -p $(dir ${2}))
+#
+#ifeq ($(suffix ${1}),.cpp)
+#	${CXX} -c ${1} -o ${2} ${INCLUDE} ${CXXFLAGS} ${3}
+#else
+#	${C} -c ${1} -o ${2} ${INCLUDE} ${CFLAGS} ${3}
+#endif
+#endef
 
 
 # ${1}: Source file

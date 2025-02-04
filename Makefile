@@ -28,6 +28,7 @@ BUILD_PATH						:= ${BUILD}/${SYSTEM}
 EXEC							:= ${BUILD}/${SYSTEM}/${EXEC}
 
 
+include Commands.mk
 include Functions.mk
 
 C_MAIN							:= $(shell find ${SRC}/** -type f -name "main.c")
@@ -75,25 +76,24 @@ all: ${OBJ_PATH} ${BUILD_PATH} ${EXEC}
 
 
 clean:
-	rm -r ${OBJ}
-	rm -r ${BUILD}
-	rm ${EXEC}
+	$(shell ${RMTREE} ${OBJ})
+	$(shell ${RMTREE} ${BUILD})
 
 
 ${BUILD_PATH}:
-	mkdir -p ${BUILD_PATH}
+	$(shell ${MKTREE} ${BUILD_PATH})
 
 
 ${OBJ_PATH}:
-	mkdir -p ${OBJ_PATH}
+	$(shell ${MKTREE} ${OBJ_PATH})
 
 
 # Builds the executable
 ${EXEC}: ${OBJS} ${MAIN_OBJ}
 ifeq (${MAIN_FILE},main.c)
-	${C} ${LIBS} ${OBJS} ${MAIN_OBJ} -o ${EXEC}
+	${C} ${OBJS} ${MAIN_OBJ} -o ${EXEC} ${LIBS} ${LDFLAGS}
 else
-	${CXX} ${LIBS} ${OBJS} ${MAIN_OBJ} -o ${EXEC}
+	${CXX} ${OBJS} ${MAIN_OBJ} -o ${EXEC} ${LIBS} ${LDFLAGS}
 endif
 
 
@@ -108,22 +108,19 @@ endif
 
 # Builds all C files mirroring their folder tree
 ${OBJ_PATH}/%.o: ${SRC}/%.c
-	$(shell mkdir -p $(dir $@))
+	$(call MKTREE,$(dir $@))
 	${C} -c $< -o $@ ${INCLUDE} ${CFLAGS}
 
 
 # Builds all CPP files mirroring their folder tree
 ${OBJ_PATH}/%.o: ${SRC}/%.cpp
-	$(shell mkdir -p $(dir $@))
+	$(call MKTREE,$(dir $@))
 	${CXX} -c $< -o $@ ${INCLUDE} ${CXXFLAGS}
 
 
-# Old recipes for creating custom recipes for every file.
-# They didn't work as expected though they should have done.
-#$(foreach src,${C_SRCS},$(call C_COMPILE,${src},$(call SRC2OBJ,${src})))
-
-
-#$(foreach src,${CPP_SRCS},$(call CXX_COMPILE,${src},$(call SRC2OBJ,${src})))
+# Old recipe for creating custom recipes for compiling all file exept main.
+# Did not work then because 'eval' was missing, but can be useful.
+#$(foreach src,${SRCS},$(eval $(call COMPILE,${src},$(call SRC2OBJ,${src}))))
 
 
 info:
