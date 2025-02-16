@@ -1,4 +1,4 @@
-PROJECT_NAME						:= test
+PROJECT_NAME					:= test
 LIBS							:= 
 CFLAGS							:=
 CXXFLAGS						:=

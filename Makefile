@@ -58,6 +58,12 @@ INCLUDE_PATHS					:= $(sort $(foreach file,${HEADERS},$(dir ${file})))
 INCLUDE							:= $(strip $(foreach inc,${INCLUDE_PATHS},-I ${inc}))
 LIBS							:= $(foreach lib,${LIBS},-l${lib})
 
+DEPS_LIBS						:= $(shell find libs/* -type f -name "*.hpp")
+DEPS_SRCS						:= $(shell find libs/* -type f -name "*.cpp")
+DEPS_INCLUDE_PATHS				:= $(sort $(foreach lib,${DEPS_LIBS},$(dir ${lib})))
+DEPS_INCLUDE					:= $(strip $(foreach lib,${DEPS_INCLUDE_PATHS},-I ${lib}))
+DEPS_OBJS						:= $(foreach src,${DEPS_SRCS},libs/obj/$(notdir $(call SRC2OBJ,${src})))
+
 ifeq (${C},)
 	C							:= clang
 endif
@@ -69,7 +75,7 @@ endif
 
 
 
-.PHONY: all clean info run
+.PHONY: all clean_deps deps clean info run
 
 
 all: ${OBJ_PATH} ${BUILD_PATH} ${EXEC}
@@ -78,6 +84,10 @@ all: ${OBJ_PATH} ${BUILD_PATH} ${EXEC}
 clean:
 	$(shell ${RMTREE} ${OBJ})
 	$(shell ${RMTREE} ${BUILD})
+
+
+clean_deps:
+	$(shell ${RMTREE} deps/obj)
 
 
 ${BUILD_PATH}:
@@ -91,36 +101,40 @@ ${OBJ_PATH}:
 # Builds the executable
 ${EXEC}: ${OBJS} ${MAIN_OBJ}
 ifeq (${MAIN_FILE},main.c)
-	${C} ${OBJS} ${MAIN_OBJ} -o ${EXEC} ${LIBS} ${LDFLAGS}
+	${C} ${DEPS_OBJS} ${OBJS} ${MAIN_OBJ} -o ${EXEC} ${LIBS} ${LDFLAGS}
 else
-	${CXX} ${OBJS} ${MAIN_OBJ} -o ${EXEC} ${LIBS} ${LDFLAGS}
+	${CXX} ${DEPS_OBJS} ${OBJS} ${MAIN_OBJ} -o ${EXEC} ${LIBS} ${LDFLAGS}
 endif
 
 
 # Builds the main object
 ${MAIN_OBJ}: ${MAIN}
 ifeq (${MAIN_FILE},main.c)
-	${C} -c ${MAIN} -o ${MAIN_OBJ} ${INCLUDE} ${CFLAGS}
+	${C} -c ${MAIN} -o ${MAIN_OBJ} ${DEPS_INCLUDE} ${INCLUDE} ${CFLAGS}
 else
-	${CXX} -c ${MAIN} -o ${MAIN_OBJ} ${INCLUDE} ${CXXFLAGS}
+	${CXX} -c ${MAIN} -o ${MAIN_OBJ} ${DEPS_INCLUDE} ${INCLUDE} ${CXXFLAGS}
 endif
 
 
 # Builds all C files mirroring their folder tree
 ${OBJ_PATH}/%.o: ${SRC}/%.c
-	$(call MKTREE,$(dir $@))
-	${C} -c $< -o $@ ${INCLUDE} ${CFLAGS}
+	$(shell ${MKTREE} $(dir $@))
+	${C} -c $< -o $@ ${DEPS_INCLUDE} ${INCLUDE} ${CFLAGS}
 
 
 # Builds all CPP files mirroring their folder tree
 ${OBJ_PATH}/%.o: ${SRC}/%.cpp
-	$(call MKTREE,$(dir $@))
-	${CXX} -c $< -o $@ ${INCLUDE} ${CXXFLAGS}
+	$(shell ${MKTREE} $(dir $@))
+	${CXX} -c $< -o $@ ${DEPS_INCLUDE} ${INCLUDE} ${CXXFLAGS}
 
 
 # Old recipe for creating custom recipes for compiling all file exept main.
 # Did not work then because 'eval' was missing, but can be useful.
 #$(foreach src,${SRCS},$(eval $(call COMPILE,${src},$(call SRC2OBJ,${src}))))
+
+
+libs:
+	/bin/bash -c libs/build
 
 
 info:
@@ -138,6 +152,10 @@ info:
 	$(info OBJS: ${OBJS})
 	$(info INCLUDED_PATHS: ${INCLUDE})
 	$(info LIBS: ${LIBS})
+	$(info EXTRA_LIBS: ${EXTRA_LIBS})
+	$(info EXTRA_INCLUDE_PATHS: ${EXTRA_INCLUDE_PATHS})
+	$(info EXTRA_INCLUDE: ${EXTRA_INCLUDE})
+	$(info EXTRA_OBJS: ${EXTRA_OBJS})
 
 
 run:
